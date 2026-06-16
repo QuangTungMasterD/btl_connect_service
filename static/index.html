@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Notification Dashboard</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .notification { background: #f0f0f0; margin: 5px; padding: 10px; border-left: 5px solid red; }
+    </style>
+</head>
+<body>
+    <h1>Real-time Notifications</h1>
+    <div id="notifications"></div>
+    <script>
+        const evtSource = new EventSource('/notifications/stream');
+        evtSource.onopen = () => console.log("SSE opened");
+        evtSource.onerror = (e) => console.error("SSE error", e);
+        evtSource.addEventListener('notification', (e) => {
+            const data = JSON.parse(e.data);
+            console.log("Got notif:", data);
+            const div = document.createElement('div');
+            div.className = 'notification';
+            div.innerHTML = `<strong>${data.userId}</strong>: ${data.message} <small>${new Date(data.timestamp * 1000).toLocaleTimeString()}</small>`;
+            document.getElementById('notifications').prepend(div);
+        });
+    </script>
+</body>
+</html>

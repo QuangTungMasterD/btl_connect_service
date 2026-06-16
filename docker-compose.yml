@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env.example
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - API_HOST=localhost   # hoặc 127.0.0.1, vì cùng container nên gọi nội bộ
+      - API_PORT=8000
+    restart: unless-stopped
