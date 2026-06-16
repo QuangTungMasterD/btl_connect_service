@@ -6,7 +6,7 @@ router = APIRouter()
 
 @router.get("/metrics/queue")
 async def queue_metrics(
-    _ = Depends(verify_token)
+    # _ = Depends(verify_token)
 ):
     state = RuntimeState.load()
 

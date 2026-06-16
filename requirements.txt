@@ -6,3 +6,8 @@ python-dotenv==1.0.1
 email-validator==2.2.0
 httpx==0.28.1
 twilio==9.4.5  # nếu dùng Twilio SMS, có thể comment sau
+
+asyncpg==0.30.0
+sqlalchemy==2.0.36
+alembic==1.14.1          # cho migration (tuỳ chọn)
+psycopg2-binary==2.9.10  # dùng cho alembic nếu cần
