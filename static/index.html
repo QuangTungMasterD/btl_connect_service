@@ -4,23 +4,107 @@
     <title>Notification Dashboard</title>
     <style>
         body { font-family: Arial; margin: 20px; }
-        .notification { background: #f0f0f0; margin: 5px; padding: 10px; border-left: 5px solid red; }
+        h1 { color: #333; }
+        .notification { 
+            background: #f0f0f0; 
+            margin: 5px 0; 
+            padding: 10px; 
+            border-left: 5px solid #007bff;
+            border-radius: 4px;
+        }
+        .notification.high { border-left-color: #dc3545; }
+        .notification.medium { border-left-color: #ffc107; }
+        .notification.low { border-left-color: #28a745; }
+        .notification .time { color: #666; font-size: 12px; float: right; }
+        .notification .user { font-weight: bold; }
+        .nav-link { 
+            display: inline-block; 
+            margin-bottom: 20px; 
+            padding: 10px 20px; 
+            background: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 4px;
+        }
+        .nav-link:hover { background: #0056b3; }
+        .loading { color: #666; }
+        #notifications { max-height: 600px; overflow-y: auto; }
     </style>
 </head>
 <body>
-    <h1>Real-time Notifications</h1>
-    <div id="notifications"></div>
+    <h1>🔔 Real-time Notifications</h1>
+    <div style="margin-bottom: 20px;">
+        <a href="/logs/html" class="nav-link">📋 View Logs</a>
+    </div>
+    <div id="notifications">
+        <p class="loading">Loading history...</p>
+    </div>
+
     <script>
-        const evtSource = new EventSource('/notifications/stream');
-        evtSource.onopen = () => console.log("SSE opened");
-        evtSource.onerror = (e) => console.error("SSE error", e);
-        evtSource.addEventListener('notification', (e) => {
-            const data = JSON.parse(e.data);
-            console.log("Got notif:", data);
+        const container = document.getElementById('notifications');
+
+        // 1. Load lịch sử từ database
+        async function loadHistory() {
+            try {
+                const resp = await fetch('/logs?limit=50&channel=display');
+                const data = await resp.json();
+                if (data.data && data.data.length > 0) {
+                    container.innerHTML = '';
+                    // Hiển thị từ cũ đến mới (đảo ngược)
+                    const reversed = data.data.reverse();
+                    for (const log of reversed) {
+                        addNotification({
+                            userId: log.user_id,
+                            message: log.message || log.event_id,
+                            timestamp: new Date(log.created_at).getTime() / 1000,
+                            severity: getSeverityFromMessage(log.message)
+                        });
+                    }
+                } else {
+                    container.innerHTML = '<p>No notifications yet.</p>';
+                }
+            } catch (e) {
+                console.error('Failed to load history:', e);
+                container.innerHTML = '<p>Error loading history.</p>';
+            }
+        }
+
+        function getSeverityFromMessage(msg) {
+            if (!msg) return 'low';
+            const lower = msg.toLowerCase();
+            if (lower.includes('critical') || lower.includes('danger')) return 'high';
+            if (lower.includes('warning') || lower.includes('medium')) return 'medium';
+            return 'low';
+        }
+
+        function addNotification(data) {
             const div = document.createElement('div');
-            div.className = 'notification';
-            div.innerHTML = `<strong>${data.userId}</strong>: ${data.message} <small>${new Date(data.timestamp * 1000).toLocaleTimeString()}</small>`;
-            document.getElementById('notifications').prepend(div);
+            div.className = 'notification ' + (data.severity || 'low');
+            const time = data.timestamp ? new Date(data.timestamp * 1000).toLocaleString('vi-VN') : '';
+            div.innerHTML = `
+                <span class="user">${data.userId || 'System'}</span>
+                <span class="time">${time}</span>
+                <div>${data.message || 'No message'}</div>
+            `;
+            // Thêm vào đầu (mới nhất lên trên)
+            container.prepend(div);
+        }
+
+        // 2. Kết nối SSE để nhận real-time
+        function connectSSE() {
+            const evtSource = new EventSource('/notifications/stream');
+            evtSource.onopen = () => console.log("SSE connected");
+            evtSource.onerror = (e) => console.error("SSE error", e);
+            evtSource.addEventListener('notification', (e) => {
+                const data = JSON.parse(e.data);
+                console.log("New notification:", data);
+                addNotification(data);
+            });
+        }
+
+        // Chạy: load history trước, sau đó connect SSE
+        loadHistory().then(() => {
+            connectSSE();
         });
     </script>
 </body>

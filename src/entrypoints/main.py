@@ -6,6 +6,13 @@ import uvicorn
 from src.api.app import app
 from src.entrypoints.run_consumer import main as consumer_main
 
+from src.infrastructure.database.models import Base
+from src.infrastructure.database.session import engine
+
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
 async def start_api():
     config = uvicorn.Config(
         "src.api.app:app",
@@ -17,6 +24,7 @@ async def start_api():
     await server.serve()
 
 async def main():
+    await init_db()
     await asyncio.gather(
         start_api(),
         consumer_main()

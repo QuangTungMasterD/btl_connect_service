@@ -5,8 +5,9 @@ from datetime import datetime
 class AlertData(BaseModel):
     alertId: str
     severity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
-    userId: Optional[str] = None
-    userGroupId: Optional[str] = None
+    target: str
+    # userId: Optional[str] = None
+    # userGroupId: Optional[str] = None
     title: str
     message: str
 
@@ -24,6 +25,7 @@ class EscalatedData(BaseModel):
     previousSeverity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     newSeverity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     reason: str
+    target: str
 
 class AlertEscalated(BaseModel):
     eventId: str
@@ -38,6 +40,7 @@ class ResolvedData(BaseModel):
     alertId: str
     resolvedBy: str
     resolutionNote: Optional[str] = None
+    target: str
 
 class AlertResolved(BaseModel):
     eventId: str

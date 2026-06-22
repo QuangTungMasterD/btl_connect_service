@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+class ChannelSender(ABC):
+    @abstractmethod
+    async def send(self, recipient: str, subject: str, message: str) -> None:
+        pass
+
 class MessageBroker(ABC):
     @abstractmethod
     async def consume(self, callback):

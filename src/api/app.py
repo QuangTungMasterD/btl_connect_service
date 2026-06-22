@@ -8,9 +8,10 @@ from src.infrastructure.display.sse_notifier import manager, ConnectionManager
 app = FastAPI(title="Notification Service", version="1.0.0")
 
 # Import routes
-from src.api.routes import health, info, metrics
+from src.api.routes import health, info, metrics, logs
 app.include_router(health.router, tags=["Health"])
 app.include_router(info.router, tags=["Info"])
+app.include_router(logs.router, tags=["Logs"])
 app.include_router(metrics.router, tags=["Metrics"])
 
 # SSE endpoint - dùng StreamingResponse

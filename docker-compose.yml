@@ -12,6 +12,22 @@ services:
       timeout: 5s
       retries: 5
 
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: notify_user
+      POSTGRES_PASSWORD: notify_pass
+      POSTGRES_DB: notification_db
+    ports:
+      - "5433:5432"   # map host port 5433 sang container port 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notify_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   notification:
     build:
       context: .
@@ -21,10 +37,21 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      db:
+        condition: service_healthy
     env_file:
       - .env.example
     environment:
       - RABBITMQ_HOST=rabbitmq
-      - API_HOST=localhost   # hoặc 127.0.0.1, vì cùng container nên gọi nội bộ
+      - API_HOST=localhost
       - API_PORT=8000
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432          # vẫn là port nội bộ 5432
+      - POSTGRES_USER=notify_user
+      - POSTGRES_PASSWORD=notify_pass
+      - POSTGRES_DB=notification_db
+      - DATABASE_URL=postgresql+asyncpg://notify_user:notify_pass@db:5432/notification_db   # thêm dòng này
     restart: unless-stopped
+
+volumes:
+  postgres_data:

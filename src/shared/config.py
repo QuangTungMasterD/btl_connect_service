@@ -43,4 +43,12 @@ class Config:
     API_HOST = os.getenv("API_HOST", "localhost")
     API_PORT = int(os.getenv("API_PORT", "8000"))
     
+    # Retry
+    MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
+    RETRY_BACKOFF_BASE = int(os.getenv("RETRY_BACKOFF_BASE", 2))
+    
+    # Telegram
+    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+    TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+    
 config = Config();
