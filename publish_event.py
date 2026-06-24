@@ -5,12 +5,12 @@ from datetime import datetime
 import uuid
 
 # ===== CẤU HÌNH TEST - SỬA Ở ĐÂY =====
-TARGET = "admin"      # "security_team", "admin", "staff", "all", hoặc "user:<uuid>"
+TARGET = "all"      # "security_team", "admin", "staff", "all"
 SEVERITY = "HIGH"             # "LOW", "MEDIUM", "HIGH", "CRITICAL"
 EVENT_TYPE = "alert.created"  # "alert.created", "alert.escalated", "alert.resolved"
 ALERT_ID = "alert-test-001"
-TITLE = "Test Alert từ Notification Service"
-MESSAGE = "Đây là tin nhắn test để kiểm tra gửi thông báo"
+TITLE = "Chốn liền"
+MESSAGE = "Chốn liền"
 # =====================================
 
 async def publish():
@@ -53,7 +53,7 @@ async def publish():
             })
 
         # Gửi lên exchange với routing key
-        routing_key = "core.notification.alerts"
+        routing_key = "notification.alerts"
         exchange = await channel.get_exchange("amq.topic")
         await exchange.publish(
             aio_pika.Message(body=json.dumps(event).encode()),

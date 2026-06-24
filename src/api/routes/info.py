@@ -11,7 +11,7 @@ async def info():
         "pair": "Pair 04 - Core Business → Notification",
         "role": "Provider",
         "mechanism": "queue-async",
-        "topic": "core.notification.alerts",
+        "topic": "notification.alerts",
         "events": ["alert.created", "alert.escalated", "alert.resolved"],
         "contractRef": "negotiation-log.md, event-contract-template.md"
     }

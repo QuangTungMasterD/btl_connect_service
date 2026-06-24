@@ -15,7 +15,7 @@ class Config:
     RABBITMQ_PASS = os.getenv("RABBITMQ_PASS", "guest")
     RABBITMQ_QUEUE = os.getenv("RABBITMQ_QUEUE", "notification.alerts")
     RABBITMQ_EXCHANGE = os.getenv("RABBITMQ_EXCHANGE", "amq.topic")
-    RABBITMQ_ROUTING_KEY = os.getenv("RABBITMQ_ROUTING_KEY", "core.notification.alerts")
+    RABBITMQ_ROUTING_KEY = os.getenv("RABBITMQ_ROUTING_KEY", "notification.alerts")
     
     # PostgreSQL
     POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
