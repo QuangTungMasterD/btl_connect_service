@@ -5,12 +5,12 @@ from datetime import datetime
 import uuid
 
 # ===== CẤU HÌNH TEST - SỬA Ở ĐÂY =====
-TARGET = "all"      # "security_team", "admin", "staff", "all"
+TARGET = "security_team"      # "security_team", "admin", "staff", "all"
 SEVERITY = "HIGH"             # "LOW", "MEDIUM", "HIGH", "CRITICAL"
 EVENT_TYPE = "alert.created"  # "alert.created", "alert.escalated", "alert.resolved"
 ALERT_ID = "alert-test-001"
-TITLE = "Chốn liền"
-MESSAGE = "Chốn liền"
+TITLE = "Quang Tùng MasterD"
+MESSAGE = "Quang Tùng MasterD"
 # =====================================
 
 async def publish():
