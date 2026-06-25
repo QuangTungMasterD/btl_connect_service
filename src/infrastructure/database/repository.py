@@ -8,7 +8,7 @@ class NotificationRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def save_log(self, event_id: str, user_id: str, channel: str, status: str, message: str = None, error_detail: str = None):
+    async def save_log(self, event_id: str, user_id: str, channel: str, status: str, message: str = None, error_detail: str = None, severity: str = None,):
         log = NotificationLog(
             event_id=event_id,
             user_id=user_id,
@@ -16,6 +16,7 @@ class NotificationRepository:
             status=status,
             message=message,
             error_detail=error_detail,
+            severity=severity,
             sent_at=datetime.utcnow()
         )
         self.session.add(log)

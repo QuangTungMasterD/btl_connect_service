@@ -15,7 +15,7 @@ MESSAGE = "Quang Tùng MasterD"
 
 async def publish():
     # Kết nối RabbitMQ (nếu chạy trong Docker thì dùng host "rabbitmq")
-    connection = await aio_pika.connect_robust("amqp://guest:guest@localhost:5672/")
+    connection = await aio_pika.connect_robust("amqp://guest:guest@26.64.54.49:5672/")
     async with connection:
         channel = await connection.channel()
         event_id = str(uuid.uuid4())

@@ -36,6 +36,7 @@ async def get_logs_api(
                 "error_detail": log.error_detail,
                 "created_at": log.created_at.isoformat() if log.created_at else None,
                 "sent_at": log.sent_at.isoformat() if log.sent_at else None,
+                "severity": log.severity,
             }
             for log in logs
         ]

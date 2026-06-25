@@ -16,6 +16,7 @@ class NotificationLog(Base):
     status = Column(Enum("success", "failed", name="status_types"), nullable=False)
     message = Column(Text, nullable=True)   # nội dung thông báo đã gửi
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    severity = Column(String(20), nullable=True)
     error_detail = Column(Text, nullable=True)
     sent_at = Column(DateTime, nullable=True)
 

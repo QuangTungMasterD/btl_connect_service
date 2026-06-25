@@ -39,7 +39,8 @@ class SseDisplayNotifier(DisplayNotifier):
                     json={
                         "userId": user_id,
                         "message": message,
-                        "timestamp": asyncio.get_event_loop().time()
+                        "timestamp": asyncio.get_event_loop().time(),
+                        # "severity": severity,
                     },
                     timeout=5.0
                 )

@@ -57,7 +57,7 @@
                             userId: log.user_id,
                             message: log.message || log.event_id,
                             timestamp: new Date(log.created_at).getTime() / 1000,
-                            severity: getSeverityFromMessage(log.message)
+                            severity: getSeverityFromMessage(log.severity)
                         });
                     }
                 } else {
@@ -71,9 +71,9 @@
 
         function getSeverityFromMessage(msg) {
             if (!msg) return 'low';
-            const lower = msg.toLowerCase();
-            if (lower.includes('critical') || lower.includes('danger')) return 'high';
-            if (lower.includes('warning') || lower.includes('medium')) return 'medium';
+            if (msg.includes('HIGH')) return 'high';
+            if (msg.includes('MEDIUM')) return 'medium';
+            if (msg.includes('LOW')) return 'low';
             return 'low';
         }
 
