@@ -4,23 +4,22 @@ import json
 from datetime import datetime
 import uuid
 
-# ===== CẤU HÌNH TEST - SỬA Ở ĐÂY =====
-TARGET = "security_team"      # "security_team", "admin", "staff", "all"
-SEVERITY = "HIGH"             # "LOW", "MEDIUM", "HIGH", "CRITICAL"
-EVENT_TYPE = "alert.created"  # "alert.created", "alert.escalated", "alert.resolved"
+TARGET = "security_team"
+SEVERITY = "HIGH"
+EVENT_TYPE = "alert.created"
 ALERT_ID = "alert-test-001"
 TITLE = "Quang Tùng MasterD"
 MESSAGE = "Quang Tùng MasterD"
-# =====================================
 
 async def publish():
-    # Kết nối RabbitMQ (nếu chạy trong Docker thì dùng host "rabbitmq")
-    connection = await aio_pika.connect_robust("amqp://guest:guest@26.64.54.49:5672/")
-    async with connection:
+    connection = None
+    try:
+        connection = await aio_pika.connect_robust(
+            "amqp://guest:guest@26.64.54.49:5672/"
+        )
         channel = await connection.channel()
         event_id = str(uuid.uuid4())
 
-        # Xây dựng event theo đúng schema
         event = {
             "eventId": event_id,
             "eventType": EVENT_TYPE,
@@ -37,7 +36,6 @@ async def publish():
             }
         }
 
-        # Điều chỉnh data cho các event type đặc biệt
         if EVENT_TYPE == "alert.escalated":
             event["data"].update({
                 "previousSeverity": "LOW",
@@ -52,20 +50,29 @@ async def publish():
                 "target": TARGET
             })
 
-        # Gửi lên exchange với routing key
         routing_key = "notification.alerts"
         exchange = await channel.get_exchange("amq.topic")
+
+        # Gửi message
         await exchange.publish(
             aio_pika.Message(body=json.dumps(event).encode()),
             routing_key=routing_key
         )
 
-        print(f"✅ Đã gửi event:")
+        # ⭐ Chờ 0.5 giây để đảm bảo dữ liệu được đẩy ra socket
+        await asyncio.sleep(0.5)
+
+        print(f"✅ Đã publish event tới {routing_key} qua amq.topic")
         print(f"   Event ID  : {event_id}")
         print(f"   Type      : {EVENT_TYPE}")
         print(f"   Target    : {TARGET}")
         print(f"   Severity  : {SEVERITY}")
-        print(f"   Routing   : {routing_key}")
+
+    except Exception as e:
+        print(f"❌ Lỗi: {e}")
+    finally:
+        if connection and not connection.is_closed:
+            await connection.close()
 
 if __name__ == "__main__":
     asyncio.run(publish())
