@@ -47,6 +47,8 @@ class HandleAlert:
                     await send_func(recipient, subject, message)
                 else:
                     await send_func(recipient, message)
+                    
+                logger.info(f"✅ [OUTPUT] {channel_name} sent to {recipient} (attempt {attempt+1})")
                 return True
             except Exception as e:
                 last_error = str(e)
@@ -79,6 +81,7 @@ class HandleAlert:
         channels = []
 
         if severity in ["CRITICAL", "HIGH"]:
+            logger.info("SEVERITY HIGHT or CRITICAL -> send full chanels (email, mock sms, telegram, display)")
             # Gửi tất cả kênh
             if user.email:
                 channels.append(("email", self.email.send, f"[ALERT] {title}", user.email))
@@ -89,10 +92,12 @@ class HandleAlert:
             # Display: dùng username hoặc email làm định danh (có thể là user_id)
             channels.append(("display", self.display.notify, None, user.username))
         elif severity in ["MEDIUM"]:  # LOW / MEDIUM
+            logger.info('SEVERITY MEDIUM -> send email & display')
             if user.email:
                 channels.append(("email", self.email.send, f"[ALERT] {title}", user.email))
             channels.append(("display", self.display.notify, None, user.username))
         elif severity == "LOW":
+            logger('SEVERITY LOW -> log only')
             # chỉ log, không gửi kênh nào, nhưng vẫn ghi log channel? Có thể ghi log chung.
             logger.info(f"Low severity alert for user {user.username}, event {event_id}. No notification sent.")
             await self._log_low_severity(event_id, user, title, message)
@@ -198,6 +203,7 @@ class HandleAlert:
             title = f"Alert {event.data.alertId} resolved"
             message = f"Alert {event.data.alertId} resolved by {event.data.resolvedBy}. Note: {event.data.resolutionNote or ''}"
 
+            logger.info(f'GET user by target: {target}')
             async with AsyncSessionLocal() as session:
                 user_repo = UserRepository(session)
                 if target == "all":

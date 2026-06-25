@@ -31,7 +31,7 @@ async def publish():
             "data": {
                 "alertId": ALERT_ID,
                 "severity": SEVERITY,
-                "target": TARGET,      # QUAN TRỌNG: dùng target để route
+                "target": TARGET,
                 "title": TITLE,
                 "message": MESSAGE
             }

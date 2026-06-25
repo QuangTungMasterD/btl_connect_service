@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import json
 from datetime import datetime
 from src.core.models.alert import AlertCreated, AlertEscalated, AlertResolved
 from src.core.use_cases.handle_alert import HandleAlert
@@ -19,6 +20,11 @@ cache = MemoryCache()
 
 async def callback(body):
     event_type = body.get("eventType")
+    event_id = body.get("eventId")
+    
+    logger.info(f"📥 [INPUT] Event received: {event_type} | ID: {event_id}")
+    logger.info(f"📥 [INPUT] Full payload: {json.dumps(body, indent=2)}")
+    
     # Tạo session và repository mới cho mỗi event
     async with AsyncSessionLocal() as session:
         repo = NotificationRepository(session)
@@ -46,6 +52,8 @@ async def callback(body):
                 processed_events=data["processed_events"] + 1,
                 last_event_at=datetime.utcnow().isoformat()
             )
+            
+            logger.info(f"✅ [OUTPUT] Event {event_id} processed successfully")
         except Exception as e:
             RuntimeState.update(
                 failed_events=data["failed_events"] + 1

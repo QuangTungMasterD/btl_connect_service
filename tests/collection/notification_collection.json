@@ -1,0 +1,242 @@
+{
+  "info": {
+    "name": "B7 Notification Service Tests",
+    "description": "Test suite cho Notification Service (nhóm B7) - Đã sửa lỗi script",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has status field', function () { pm.expect(pm.response.json()).to.have.property('status'); });",
+              "pm.test('Service name is correct', function () { pm.expect(pm.response.json().service).to.eql('notification-service'); });",
+              "pm.test('RabbitMQ connected is boolean', function () { pm.expect(pm.response.json().rabbitmq).to.be.a('boolean'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Info",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has events array', function () { pm.expect(pm.response.json().events).to.be.an('array'); });",
+              "pm.test('Events include 3 types', function () { pm.expect(pm.response.json().events).to.include.members(['alert.created', 'alert.escalated', 'alert.resolved']); });",
+              "pm.test('Service version exists', function () { pm.expect(pm.response.json()).to.have.property('version'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/info",
+          "host": ["{{base_url}}"],
+          "path": ["info"]
+        }
+      }
+    },
+    {
+      "name": "Metrics - Queue",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has queueName', function () { pm.expect(pm.response.json()).to.have.property('queueName'); });",
+              "pm.test('Queue name is notification.alerts', function () { pm.expect(pm.response.json().queueName).to.eql('notification.alerts'); });",
+              "pm.test('ProcessedEvents is number', function () { pm.expect(pm.response.json().processedEvents).to.be.a('number'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/metrics/queue",
+          "host": ["{{base_url}}"],
+          "path": ["metrics", "queue"]
+        }
+      }
+    },
+    {
+      "name": "Get Logs - No Filters",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response has data array', function () { pm.expect(pm.response.json().data).to.be.an('array'); });",
+              "pm.test('Response has total, limit, offset', function () { pm.expect(pm.response.json()).to.have.all.keys('data', 'total', 'limit', 'offset'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/logs?limit=10",
+          "host": ["{{base_url}}"],
+          "path": ["logs"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Logs - Filter by Event ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Response data is array', function () { pm.expect(pm.response.json().data).to.be.an('array'); });",
+              "pm.test('If any log returned, event_id matches filter', function () {",
+                "  var logs = pm.response.json().data;",
+                "  if (logs.length > 0) {",
+                "    pm.expect(logs[0].event_id).to.eql(pm.variables.get('testEventId'));",
+                "  } else {",
+                "    pm.expect(true).to.be.true; // bỏ qua nếu không có log",
+                "  }",
+                "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/logs?event_id={{testEventId}}",
+          "host": ["{{base_url}}"],
+          "path": ["logs"],
+          "query": [
+            {
+              "key": "event_id",
+              "value": "{{testEventId}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Logs - Filter by Channel (email)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('All returned logs have channel=email', function () {",
+                "  var logs = pm.response.json().data;",
+                "  logs.forEach(function(log) {",
+                "    pm.expect(log.channel).to.eql('email');",
+                "  });",
+                "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/logs?channel=email&limit=5",
+          "host": ["{{base_url}}"],
+          "path": ["logs"],
+          "query": [
+            {
+              "key": "channel",
+              "value": "email"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Logs - Pagination (Offset)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Offset matches request', function () { pm.expect(pm.response.json().offset).to.eql(5); });",
+              "pm.test('Limit matches request', function () { pm.expect(pm.response.json().limit).to.eql(3); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/logs?limit=3&offset=5",
+          "host": ["{{base_url}}"],
+          "path": ["logs"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "3"
+            },
+            {
+              "key": "offset",
+              "value": "5"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "testEventId",
+      "value": "dummy-event-id",
+      "type": "string"
+    }
+  ]
+}
