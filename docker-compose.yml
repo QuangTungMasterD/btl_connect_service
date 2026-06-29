@@ -32,6 +32,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: notification-service-notification:latest
     ports:
       - "8000:8000"
     depends_on:
@@ -40,7 +41,7 @@ services:
       db:
         condition: service_healthy
     env_file:
-      - .env.example
+      - .env
     environment:
       - RABBITMQ_HOST=rabbitmq
       - API_HOST=localhost
