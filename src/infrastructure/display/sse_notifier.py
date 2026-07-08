@@ -47,3 +47,21 @@ class SseDisplayNotifier(DisplayNotifier):
         except Exception as e:
             logger.error(f"Failed to forward: {e}")
             raise
+        
+class EventConnectionManager:
+    def __init__(self):
+        self.active_connections: Set[asyncio.Queue] = set()
+
+    async def connect(self) -> asyncio.Queue:
+        q = asyncio.Queue()
+        self.active_connections.add(q)
+        return q
+
+    def disconnect(self, q: asyncio.Queue):
+        self.active_connections.discard(q)
+
+    async def broadcast(self, message: dict):
+        for q in self.active_connections:
+            await q.put(message)
+
+event_manager = EventConnectionManager()

@@ -13,14 +13,32 @@ from src.infrastructure.cache.memory_cache import MemoryCache
 from src.infrastructure.database.session import AsyncSessionLocal
 from src.infrastructure.database.repository import NotificationRepository
 from src.shared.runtime_state import RuntimeState
+from src.infrastructure.display.sse_notifier import event_manager
+import httpx
+from src.shared.config import Config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 cache = MemoryCache()
 
+async def forward_event_to_stream(event_payload: dict):
+    """Gửi event payload lên stream /events qua internal endpoint."""
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"http://{Config.API_HOST}:{Config.API_PORT}/internal/event",
+                json=event_payload,
+                timeout=2.0
+            )
+        logger.debug("Forwarded event to stream")
+    except Exception as e:
+        logger.error(f"Failed to forward event to stream: {e}")
+
 async def callback(body):
     event_type = body.get("eventType")
     event_id = body.get("eventId")
+    
+    await forward_event_to_stream(body)
     
     logger.info(f"📥 [INPUT] Event received: {event_type} | ID: {event_id}")
     logger.info(f"📥 [INPUT] Full payload: {json.dumps(body, indent=2)}")

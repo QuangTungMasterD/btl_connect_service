@@ -271,18 +271,29 @@
         </div>
     </div>
 
-    <!-- Inbound Signals (Real-time) -->
+    <!-- ===== Tin hiệu từ Core Business (Inbound) ===== -->
     <div class="section">
         <h2>
             <span>📡 Tin hiệu từ Core Business (Inbound)</span>
-            <span class="badge" id="inboundCount">0 mới</span>
+            <span class="badge" id="eventCount">0 mới</span>
         </h2>
-        <div id="inboundList">
-            <div class="empty">Chưa có tin hiệu real-time.</div>
+        <div id="eventList">
+            <div class="empty">Chưa có sự kiện nào.</div>
         </div>
     </div>
 
-    <!-- Logs History -->
+    <!-- ===== Gửi thông báo thành công ===== -->
+    <div class="section">
+        <h2>
+            <span>✅ Gửi thông báo thành công</span>
+            <span class="badge" id="inboundCount">0 mới</span>
+        </h2>
+        <div id="inboundList">
+            <div class="empty">Chưa có kết quả gửi nào.</div>
+        </div>
+    </div>
+
+    <!-- ===== Logs History ===== -->
     <div class="section">
         <h2>
             <span>📋 Lịch sử & Trạng thái gửi Alerts</span>
@@ -339,6 +350,7 @@
     const limit = 20;
     let logCache = [];
     let inboundItems = [];
+    let eventItems = [];
     const MAX_INBOUND = 10;
 
     let stats = {
@@ -358,6 +370,8 @@
     const retryEl = document.getElementById('retryCount');
     const inboundListEl = document.getElementById('inboundList');
     const inboundCountEl = document.getElementById('inboundCount');
+    const eventListEl = document.getElementById('eventList');
+    const eventCountEl = document.getElementById('eventCount');
     const logsBody = document.getElementById('logsBody');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
@@ -379,7 +393,6 @@
         return 'severity-low';
     }
 
-    // Xóa newline, dồn khoảng trắng, cắt ngắn
     function truncateText(text, len = 80) {
         if (!text) return '-';
         let clean = text.replace(/\s+/g, ' ').trim();
@@ -387,12 +400,9 @@
         return clean.substring(0, len) + '…';
     }
 
-    // ---- XỬ LÝ NỘI DUNG RIÊNG CHO EMAIL ----
     function formatMessage(log) {
         if (!log.message) return '-';
         let text = log.message;
-
-        // Nếu là email và chứa HTML
         if (log.channel === 'email' && text.includes('<html>')) {
             const match = text.match(/<div class="message-box">(.*?)<\/div>/);
             if (match && match[1]) {
@@ -406,7 +416,6 @@
             let plain = text.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
             return `📧 ${plain.substring(0, 60)}…`;
         }
-
         return truncateText(text, 80);
     }
 
@@ -428,25 +437,22 @@
         return q;
     }
 
-    // ---------- STATS (tính đúng trùng lặp: cùng event_id + cùng channel) ----------
+    // ---------- STATS ----------
     function computeStats(logs) {
         const total = logs.length;
         const success = logs.filter(l => l.status === 'success').length;
         const failed = total - success;
-
-        // Đếm số bản ghi trùng lặp theo (event_id, channel)
         const keyCounts = {};
         logs.forEach(l => {
-            const key = `${l.event_id}|${l.channel}`;
+            const key = `${l.event_id}|${l.channel}|${l.user_id}`;
             keyCounts[key] = (keyCounts[key] || 0) + 1;
         });
         let dedup = 0;
         for (const key in keyCounts) {
             if (keyCounts[key] > 1) {
-                dedup += keyCounts[key] - 1; // số bản ghi thừa
+                dedup += keyCounts[key] - 1;
             }
         }
-
         const retry = logs.reduce((sum, l) => sum + (l.retry_count || 0), 0);
         return { total, success, failed, dedup, retry };
     }
@@ -484,10 +490,47 @@
         }
     }
 
-    // ---------- INBOUND ----------
+    // ---------- RENDER EVENTS (từ B6) ----------
+    function renderEvents() {
+        if (eventItems.length === 0) {
+            eventListEl.innerHTML = '<div class="empty">Chưa có sự kiện nào.</div>';
+            eventCountEl.textContent = '0 mới';
+            return;
+        }
+        let html = '';
+        eventItems.forEach(evt => {
+            const severity = evt.data?.severity || 'LOW';
+            const sevUpper = severity.toUpperCase();
+            const title = evt.data?.title || evt.eventId || 'No title';
+            const target = evt.data?.target || '';
+            const occurredAt = evt.occurredAt || new Date().toISOString();
+            html += `
+                <div class="inbound-item" style="border-left-color: ${sevUpper === 'CRITICAL' ? '#dc3545' : sevUpper === 'HIGH' ? '#fd7e14' : sevUpper === 'MEDIUM' ? '#ffc107' : '#28a745'}">
+                    <div class="meta">
+                        <span class="title">[${evt.eventType || 'event'}] ${title}</span>
+                        <span class="time">${formatTime(occurredAt)}</span>
+                    </div>
+                    <div style="font-size:13px; margin-top:4px;">
+                        <span class="severity-badge ${severityClass(severity)}">${sevUpper}</span>
+                        <span class="channel-tag">target: ${target}</span>
+                        <span>${evt.eventId || ''}</span>
+                    </div>
+                </div>
+            `;
+        });
+        eventListEl.innerHTML = html;
+        eventCountEl.textContent = `${eventItems.length} mới`;
+    }
+
+    function addEvent(evt) {
+        eventItems = [evt, ...eventItems].slice(0, MAX_INBOUND);
+        renderEvents();
+    }
+
+    // ---------- RENDER INBOUND (kết quả gửi) ----------
     function renderInbound() {
         if (inboundItems.length === 0) {
-            inboundListEl.innerHTML = '<div class="empty">Chưa có tin hiệu real-time.</div>';
+            inboundListEl.innerHTML = '<div class="empty">Chưa có kết quả gửi nào.</div>';
             inboundCountEl.textContent = '0 mới';
             return;
         }
@@ -505,6 +548,7 @@
                         <span class="severity-badge ${severityClass(sev)}">${sev}</span>
                         <span class="channel-tag">${item.channel || 'inbound'}</span>
                         <span>${item.user_id || ''}</span>
+                        ${item.status === 'success' ? '✅' : item.status === 'failed' ? '❌' : ''}
                     </div>
                 </div>
             `;
@@ -568,7 +612,6 @@
         }
     }
 
-    // ---------- FILTER & RELOAD ----------
     function applyFilters() { loadLogs(0); }
     function resetFilters() {
         document.getElementById('filterEvent').value = '';
@@ -587,48 +630,58 @@
         loadLogs(newOffset);
     }
 
-    // ---------- SSE ----------
-    function handleSSENotification(data) {
-        console.log('📨 Raw SSE:', data);
-        if (data.event_id && data.status && data.channel) {
-            stats.total += 1;
-            if (data.status === 'success') stats.success += 1;
-            else stats.failed += 1;
-            // Kiểm tra trùng lặp theo (event_id, channel) trong cache hiện tại
-            const key = `${data.event_id}|${data.channel}`;
-            const existing = logCache.filter(l => `${l.event_id}|${l.channel}` === key);
-            if (existing.length > 0) {
-                stats.dedup += 1; // bản ghi mới là bản sao
+    // ---------- SSE CONNECTIONS ----------
+    // --- Stream sự kiện từ B6 (/events/stream) ---
+    function connectEventStream() {
+        const evtSource = new EventSource('/events/stream');
+        evtSource.onopen = () => console.log('🔌 EventStream connected');
+        evtSource.onerror = (e) => console.error('❌ EventStream error', e);
+        evtSource.addEventListener('event', (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                console.log('📨 Inbound Event:', data);
+                addEvent(data);
+            } catch (err) {
+                console.error('Parse EventStream error', err);
             }
-            stats.retry += (data.retry_count || 0);
-            renderStats();
-            addInbound(data);
-        } else {
-            const item = {
-                event_id: data.event_id || `signal-${Date.now()}`,
-                user_id: data.userId || '',
-                channel: 'inbound',
-                status: 'pending',
-                severity: data.message && data.message.includes('HIGH') ? 'HIGH' :
-                          data.message && data.message.includes('CRITICAL') ? 'CRITICAL' : 'LOW',
-                message: data.message || 'Inbound signal',
-                created_at: new Date().toISOString(),
-                ...data
-            };
-            addInbound(item);
-        }
+        });
     }
 
-    function connectSSE() {
+    // --- Stream kết quả gửi (/notifications/stream) ---
+    function connectNotificationStream() {
         const evtSource = new EventSource('/notifications/stream');
-        evtSource.onopen = () => console.log('🔌 SSE connected');
-        evtSource.onerror = (e) => console.error('❌ SSE error', e);
+        evtSource.onopen = () => console.log('🔌 NotificationStream connected');
+        evtSource.onerror = (e) => console.error('❌ NotificationStream error', e);
         evtSource.addEventListener('notification', (e) => {
             try {
                 const data = JSON.parse(e.data);
-                handleSSENotification(data);
+                console.log('📨 Notification result:', data);
+                // Xử lý kết quả gửi
+                if (data.event_id && data.status && data.channel) {
+                    stats.total += 1;
+                    if (data.status === 'success') stats.success += 1;
+                    else stats.failed += 1;
+                    const key = `${data.event_id}|${data.channel}`;
+                    const existing = logCache.filter(l => `${l.event_id}|${l.channel}` === key);
+                    if (existing.length > 0) stats.dedup += 1;
+                    stats.retry += (data.retry_count || 0);
+                    renderStats();
+                    addInbound(data);
+                } else {
+                    // Fallback: tạo item tạm
+                    addInbound({
+                        event_id: data.event_id || `signal-${Date.now()}`,
+                        user_id: data.userId || '',
+                        channel: 'inbound',
+                        status: 'pending',
+                        severity: data.message && data.message.includes('HIGH') ? 'HIGH' : 'LOW',
+                        message: data.message || 'Inbound signal',
+                        created_at: new Date().toISOString(),
+                        ...data
+                    });
+                }
             } catch (err) {
-                console.error('Parse SSE error', err);
+                console.error('Parse NotificationStream error', err);
             }
         });
     }
@@ -637,7 +690,8 @@
     window.onload = async function() {
         await loadLogs(0);
         await loadFullStats();
-        connectSSE();
+        connectEventStream();
+        connectNotificationStream();
     };
 </script>
 </body>

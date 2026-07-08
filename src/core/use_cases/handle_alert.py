@@ -32,16 +32,18 @@ class HandleAlert:
     async def _log_channel(self, event_id: str, user_id: str, channel: str, status: str, message: str = None, error: str = None, severity: str = None,
                    retry_count: int = 0):
         try:
-            await self.repo.save_log(
-                event_id=event_id,
-                user_id=user_id,
-                channel=channel,
-                status=status,
-                message=message,
-                error_detail=error,
-                severity=severity,
-                retry_count=retry_count,
-            )
+            async with AsyncSessionLocal() as session:
+                self.repo = NotificationRepository(session)
+                await self.repo.save_log(
+                    event_id=event_id,
+                    user_id=user_id,
+                    channel=channel,
+                    status=status,
+                    message=message,
+                    error_detail=error,
+                    severity=severity,
+                    retry_count=retry_count,
+                )
         except Exception as e:
             logger.error(f"Failed to save log for {channel}: {e}")
 

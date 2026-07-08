@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from src.infrastructure.display.sse_notifier import manager, ConnectionManager
 from fastapi.middleware.cors import CORSMiddleware
+from src.infrastructure.display.sse_notifier import event_manager
 
 app = FastAPI(title="Notification Service", version="1.0.0")
 
@@ -38,6 +39,20 @@ async def stream_notifications():
             raise
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+@app.get("/events/stream")
+async def event_stream():
+    async def event_generator():
+        queue = await event_manager.connect()
+        try:
+            while True:
+                message = await queue.get()
+                # message là dict chứa toàn bộ event payload
+                yield f"event: event\ndata: {json.dumps(message)}\n\n"
+        except asyncio.CancelledError:
+            event_manager.disconnect(queue)
+            raise
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 # Internal endpoint
 @app.post("/internal/notify")
 async def internal_notify(request: Request):
@@ -50,6 +65,13 @@ async def internal_notify(request: Request):
         "message": message,
         "timestamp": timestamp
     })
+    return {"status": "ok"}
+
+@app.post("/internal/event")
+async def internal_event(request: Request):
+    """Đầu vào là payload của event từ Core Business (đã parse)."""
+    data = await request.json()
+    await event_manager.broadcast(data)
     return {"status": "ok"}
 
 # Mount static
