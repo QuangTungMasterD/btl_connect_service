@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Text, Enum, Index
+from sqlalchemy import Column, String, DateTime, Text, Enum, Index, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 import uuid
@@ -19,6 +19,7 @@ class NotificationLog(Base):
     severity = Column(String(20), nullable=True)
     error_detail = Column(Text, nullable=True)
     sent_at = Column(DateTime, nullable=True)
+    retry_count = Column(Integer, default=0, nullable=False)
 
     # Index để truy vấn nhanh theo event_id và user_id
     __table_args__ = (

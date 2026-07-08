@@ -7,13 +7,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 class SmtpEmailSender(EmailSender):
-    async def send(self, to: str, subject: str, body: str):
+    async def send(self, to: str, subject: str, body: str, html: bool = False):
         msg = EmailMessage()
-        msg.set_content(body)
+        if html:
+            msg.add_alternative(body, subtype='html')
+        else:
+            msg.set_content(body)
         msg["Subject"] = subject
         msg["From"] = Config.SMTP_FROM
         msg["To"] = to
-        
+
         try:
             with smtplib.SMTP(Config.SMTP_HOST, Config.SMTP_PORT) as smtp:
                 smtp.starttls()
@@ -22,3 +25,4 @@ class SmtpEmailSender(EmailSender):
             logger.info(f"Email sent to {to}")
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
+            raise

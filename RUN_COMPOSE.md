@@ -49,6 +49,7 @@ docker compose ps
 ### 5.1. API Health
 ```bash
 curl http://localhost:8000/health
+
 ```
 Kết quả mẫu
 ```json

@@ -31,7 +31,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 class SseDisplayNotifier(DisplayNotifier):
-    async def notify(self, user_id: str, message: str) -> None:
+    async def notify(self, user_id: str, subject: str = None, message: str = None):
         try:
             async with httpx.AsyncClient() as client:
                 await client.post(
@@ -40,10 +40,10 @@ class SseDisplayNotifier(DisplayNotifier):
                         "userId": user_id,
                         "message": message,
                         "timestamp": asyncio.get_event_loop().time(),
-                        # "severity": severity,
                     },
                     timeout=5.0
                 )
             logger.info(f"Forwarded to API for user {user_id}")
         except Exception as e:
             logger.error(f"Failed to forward: {e}")
+            raise

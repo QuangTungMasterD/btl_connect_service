@@ -1,111 +1,644 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Notification Dashboard</title>
     <style>
-        body { font-family: Arial; margin: 20px; }
-        h1 { color: #333; }
-        .notification { 
-            background: #f0f0f0; 
-            margin: 5px 0; 
-            padding: 10px; 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6f9;
+            padding: 20px;
+            color: #333;
+        }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h1 small {
+            font-size: 16px;
+            font-weight: normal;
+            color: #666;
+            margin-left: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             border-left: 5px solid #007bff;
-            border-radius: 4px;
         }
-        .notification.high { border-left-color: #dc3545; }
-        .notification.medium { border-left-color: #ffc107; }
-        .notification.low { border-left-color: #28a745; }
-        .notification .time { color: #666; font-size: 12px; float: right; }
-        .notification .user { font-weight: bold; }
-        .nav-link { 
-            display: inline-block; 
-            margin-bottom: 20px; 
-            padding: 10px 20px; 
-            background: #007bff; 
-            color: white; 
-            text-decoration: none; 
-            border-radius: 4px;
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #1a1a2e;
         }
-        .nav-link:hover { background: #0056b3; }
-        .loading { color: #666; }
-        #notifications { max-height: 600px; overflow-y: auto; }
+        .stat-card .label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .stat-card .sub {
+            font-size: 13px;
+            color: #28a745;
+            margin-top: 4px;
+        }
+        .stat-card:nth-child(1) { border-left-color: #007bff; }
+        .stat-card:nth-child(2) { border-left-color: #28a745; }
+        .stat-card:nth-child(3) { border-left-color: #ffc107; }
+        .stat-card:nth-child(4) { border-left-color: #dc3545; }
+
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .section h2 .badge {
+            font-size: 14px;
+            background: #e9ecef;
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: #495057;
+        }
+        .section h2 .reload-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 0 8px;
+            transition: transform 0.2s;
+        }
+        .section h2 .reload-btn:hover {
+            transform: rotate(90deg);
+        }
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            background: #f8f9fa;
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+        tr:hover td {
+            background: #f8f9fa;
+        }
+        .severity-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .severity-critical { background: #dc3545; }
+        .severity-high { background: #fd7e14; }
+        .severity-medium { background: #ffc107; color: #333; }
+        .severity-low { background: #28a745; }
+        .status-success { color: #28a745; font-weight: bold; }
+        .status-failed { color: #dc3545; font-weight: bold; }
+        .status-pending { color: #ffc107; font-weight: bold; }
+        .channel-tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            background: #e9ecef;
+        }
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .filters input, .filters select {
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .filters button {
+            padding: 8px 18px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .filters button:hover { background: #0056b3; }
+        .filters button.reset { background: #6c757d; }
+        .filters button.reset:hover { background: #5a6268; }
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 15px;
+            align-items: center;
+        }
+        .pagination button {
+            padding: 6px 14px;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #e9ecef;
+        }
+        .pagination span {
+            font-size: 14px;
+        }
+        .loading {
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+        }
+        .empty {
+            color: #6c757d;
+            text-align: center;
+            padding: 30px;
+        }
+        .time {
+            color: #6c757d;
+            font-size: 13px;
+        }
+        .message-preview {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+        .inbound-item {
+            border-left: 4px solid #007bff;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+        .inbound-item .meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #495057;
+        }
+        .inbound-item .title {
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                grid-template-columns: 1fr 1fr;
+            }
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>🔔 Real-time Notifications</h1>
-    <div style="margin-bottom: 20px;">
-        <a href="/logs/html" class="nav-link">📋 View Logs</a>
-    </div>
-    <div id="notifications">
-        <p class="loading">Loading history...</p>
+<div class="dashboard">
+    <h1>
+        📊 Notification Dashboard
+        <small>Real-time alert monitoring</small>
+    </h1>
+
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <div class="number" id="totalAlerts">0</div>
+            <div class="label">Tổng cảnh báo</div>
+            <div class="sub">Đã xử lý từ Core Business</div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="successCount">0</div>
+            <div class="label">Gửi thành công</div>
+            <div class="sub">Tỷ lệ: <span id="successRate">0%</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="dedupCount">0</div>
+            <div class="label">Trùng lặp</div>
+            <div class="sub">Số bản ghi trùng (cùng event + channel)</div>
+        </div>
+        <div class="stat-card">
+            <div class="number" id="retryCount">0</div>
+            <div class="label">Yêu cầu Retry</div>
+            <div class="sub">Số lượt tự động gửi lại</div>
+        </div>
     </div>
 
-    <script>
-        const container = document.getElementById('notifications');
+    <!-- Inbound Signals (Real-time) -->
+    <div class="section">
+        <h2>
+            <span>📡 Tin hiệu từ Core Business (Inbound)</span>
+            <span class="badge" id="inboundCount">0 mới</span>
+        </h2>
+        <div id="inboundList">
+            <div class="empty">Chưa có tin hiệu real-time.</div>
+        </div>
+    </div>
 
-        // 1. Load lịch sử từ database
-        async function loadHistory() {
-            try {
-                const resp = await fetch('/logs?limit=50&channel=display');
-                const data = await resp.json();
-                if (data.data && data.data.length > 0) {
-                    container.innerHTML = '';
-                    // Hiển thị từ cũ đến mới (đảo ngược)
-                    const reversed = data.data.reverse();
-                    for (const log of reversed) {
-                        addNotification({
-                            userId: log.user_id,
-                            message: log.message || log.event_id,
-                            timestamp: new Date(log.created_at).getTime() / 1000,
-                            severity: getSeverityFromMessage(log.severity)
-                        });
-                    }
-                } else {
-                    container.innerHTML = '<p>No notifications yet.</p>';
-                }
-            } catch (e) {
-                console.error('Failed to load history:', e);
-                container.innerHTML = '<p>Error loading history.</p>';
+    <!-- Logs History -->
+    <div class="section">
+        <h2>
+            <span>📋 Lịch sử & Trạng thái gửi Alerts</span>
+            <button class="reload-btn" onclick="reloadLogs()" title="Tải lại danh sách">🔄</button>
+        </h2>
+        <div class="filters">
+            <input type="text" id="filterEvent" placeholder="Event ID">
+            <input type="text" id="filterUser" placeholder="User ID">
+            <select id="filterChannel">
+                <option value="">Tất cả kênh</option>
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+                <option value="telegram">Telegram</option>
+                <option value="display">Display</option>
+                <option value="log">Log (LOW)</option>
+            </select>
+            <select id="filterStatus">
+                <option value="">Tất cả trạng thái</option>
+                <option value="success">Thành công</option>
+                <option value="failed">Thất bại</option>
+            </select>
+            <button onclick="applyFilters()">🔍 Lọc</button>
+            <button class="reset" onclick="resetFilters()">⟳ Reset</button>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Event ID</th>
+                        <th>User</th>
+                        <th>Kênh</th>
+                        <th>Trạng thái</th>
+                        <th>Nội dung</th>
+                        <th>Lỗi</th>
+                    </tr>
+                </thead>
+                <tbody id="logsBody">
+                    <tr><td colspan="7" class="loading">Đang tải...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination">
+            <button id="prevBtn" disabled onclick="changePage(-1)">← Trước</button>
+            <span id="pageInfo">Trang 1</span>
+            <button id="nextBtn" onclick="changePage(1)">Sau →</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- STATE ----------
+    let currentOffset = 0;
+    const limit = 20;
+    let logCache = [];
+    let inboundItems = [];
+    const MAX_INBOUND = 10;
+
+    let stats = {
+        total: 0,
+        success: 0,
+        failed: 0,
+        dedup: 0,
+        retry: 0
+    };
+    let allEventIds = new Set();
+
+    // DOM refs
+    const totalEl = document.getElementById('totalAlerts');
+    const successEl = document.getElementById('successCount');
+    const rateEl = document.getElementById('successRate');
+    const dedupEl = document.getElementById('dedupCount');
+    const retryEl = document.getElementById('retryCount');
+    const inboundListEl = document.getElementById('inboundList');
+    const inboundCountEl = document.getElementById('inboundCount');
+    const logsBody = document.getElementById('logsBody');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const pageInfo = document.getElementById('pageInfo');
+
+    // ---------- UTILITY ----------
+    function formatTime(iso) {
+        if (!iso) return '-';
+        const d = new Date(iso);
+        return d.toLocaleString('vi-VN', { hour12: false });
+    }
+
+    function severityClass(sev) {
+        if (!sev) return '';
+        const s = sev.toUpperCase();
+        if (s === 'CRITICAL') return 'severity-critical';
+        if (s === 'HIGH') return 'severity-high';
+        if (s === 'MEDIUM') return 'severity-medium';
+        return 'severity-low';
+    }
+
+    // Xóa newline, dồn khoảng trắng, cắt ngắn
+    function truncateText(text, len = 80) {
+        if (!text) return '-';
+        let clean = text.replace(/\s+/g, ' ').trim();
+        if (clean.length <= len) return clean;
+        return clean.substring(0, len) + '…';
+    }
+
+    // ---- XỬ LÝ NỘI DUNG RIÊNG CHO EMAIL ----
+    function formatMessage(log) {
+        if (!log.message) return '-';
+        let text = log.message;
+
+        // Nếu là email và chứa HTML
+        if (log.channel === 'email' && text.includes('<html>')) {
+            const match = text.match(/<div class="message-box">(.*?)<\/div>/);
+            if (match && match[1]) {
+                let clean = match[1].replace(/<[^>]+>/g, '').trim();
+                return `📧 ${clean}`;
+            }
+            const titleMatch = text.match(/\[Title\]:\s*([^\n]+)/);
+            if (titleMatch) {
+                return `📧 ${titleMatch[1].trim()}`;
+            }
+            let plain = text.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+            return `📧 ${plain.substring(0, 60)}…`;
+        }
+
+        return truncateText(text, 80);
+    }
+
+    function getFilterValues() {
+        return {
+            eventId: document.getElementById('filterEvent').value.trim(),
+            userId: document.getElementById('filterUser').value.trim(),
+            channel: document.getElementById('filterChannel').value,
+            status: document.getElementById('filterStatus').value
+        };
+    }
+
+    function buildFilterQuery(filters) {
+        let q = '';
+        if (filters.eventId) q += `&event_id=${encodeURIComponent(filters.eventId)}`;
+        if (filters.userId) q += `&user_id=${encodeURIComponent(filters.userId)}`;
+        if (filters.channel) q += `&channel=${encodeURIComponent(filters.channel)}`;
+        if (filters.status) q += `&status=${encodeURIComponent(filters.status)}`;
+        return q;
+    }
+
+    // ---------- STATS (tính đúng trùng lặp: cùng event_id + cùng channel) ----------
+    function computeStats(logs) {
+        const total = logs.length;
+        const success = logs.filter(l => l.status === 'success').length;
+        const failed = total - success;
+
+        // Đếm số bản ghi trùng lặp theo (event_id, channel)
+        const keyCounts = {};
+        logs.forEach(l => {
+            const key = `${l.event_id}|${l.channel}`;
+            keyCounts[key] = (keyCounts[key] || 0) + 1;
+        });
+        let dedup = 0;
+        for (const key in keyCounts) {
+            if (keyCounts[key] > 1) {
+                dedup += keyCounts[key] - 1; // số bản ghi thừa
             }
         }
 
-        function getSeverityFromMessage(msg) {
-            if (!msg) return 'low';
-            if (msg.includes('HIGH')) return 'high';
-            if (msg.includes('MEDIUM')) return 'medium';
-            if (msg.includes('LOW')) return 'low';
-            return 'low';
-        }
+        const retry = logs.reduce((sum, l) => sum + (l.retry_count || 0), 0);
+        return { total, success, failed, dedup, retry };
+    }
 
-        function addNotification(data) {
-            const div = document.createElement('div');
-            div.className = 'notification ' + (data.severity || 'low');
-            const time = data.timestamp ? new Date(data.timestamp * 1000).toLocaleString('vi-VN') : '';
-            div.innerHTML = `
-                <span class="user">${data.userId || 'System'}</span>
-                <span class="time">${time}</span>
-                <div>${data.message || 'No message'}</div>
+    function updateStatsFromLogs(logs) {
+        const newStats = computeStats(logs);
+        stats.total = newStats.total;
+        stats.success = newStats.success;
+        stats.failed = newStats.failed;
+        stats.dedup = newStats.dedup;
+        stats.retry = newStats.retry;
+        allEventIds = new Set(logs.map(l => l.event_id));
+        renderStats();
+    }
+
+    function renderStats() {
+        totalEl.textContent = stats.total;
+        successEl.textContent = stats.success;
+        const rate = stats.total ? Math.round((stats.success / stats.total) * 100) : 0;
+        rateEl.textContent = rate + '%';
+        dedupEl.textContent = stats.dedup;
+        retryEl.textContent = stats.retry;
+    }
+
+    async function loadFullStats() {
+        try {
+            const resp = await fetch('/logs?limit=1000');
+            const data = await resp.json();
+            const logs = data.data || [];
+            if (logs.length > 0) {
+                updateStatsFromLogs(logs);
+            }
+        } catch (e) {
+            console.error('Load full stats error:', e);
+        }
+    }
+
+    // ---------- INBOUND ----------
+    function renderInbound() {
+        if (inboundItems.length === 0) {
+            inboundListEl.innerHTML = '<div class="empty">Chưa có tin hiệu real-time.</div>';
+            inboundCountEl.textContent = '0 mới';
+            return;
+        }
+        let html = '';
+        inboundItems.forEach(item => {
+            const sev = item.severity || 'LOW';
+            const sevUpper = sev.toUpperCase();
+            html += `
+                <div class="inbound-item" style="border-left-color: ${sevUpper === 'CRITICAL' ? '#dc3545' : sevUpper === 'HIGH' ? '#fd7e14' : sevUpper === 'MEDIUM' ? '#ffc107' : '#28a745'}">
+                    <div class="meta">
+                        <span class="title">${truncateText(item.message || item.event_id || 'Signal', 60)}</span>
+                        <span class="time">${formatTime(item.created_at)}</span>
+                    </div>
+                    <div style="font-size:13px; margin-top:4px;">
+                        <span class="severity-badge ${severityClass(sev)}">${sev}</span>
+                        <span class="channel-tag">${item.channel || 'inbound'}</span>
+                        <span>${item.user_id || ''}</span>
+                    </div>
+                </div>
             `;
-            // Thêm vào đầu (mới nhất lên trên)
-            container.prepend(div);
-        }
-
-        // 2. Kết nối SSE để nhận real-time
-        function connectSSE() {
-            const evtSource = new EventSource('/notifications/stream');
-            evtSource.onopen = () => console.log("SSE connected");
-            evtSource.onerror = (e) => console.error("SSE error", e);
-            evtSource.addEventListener('notification', (e) => {
-                const data = JSON.parse(e.data);
-                console.log("New notification:", data);
-                addNotification(data);
-            });
-        }
-
-        // Chạy: load history trước, sau đó connect SSE
-        loadHistory().then(() => {
-            connectSSE();
         });
-    </script>
+        inboundListEl.innerHTML = html;
+        inboundCountEl.textContent = `${inboundItems.length} mới`;
+    }
+
+    function addInbound(item) {
+        inboundItems = [item, ...inboundItems].slice(0, MAX_INBOUND);
+        renderInbound();
+    }
+
+    // ---------- LOGS TABLE ----------
+    function renderLogs(logs) {
+        if (!logs || logs.length === 0) {
+            logsBody.innerHTML = '<tr><td colspan="7" class="empty">Không tìm thấy logs.</td></tr>';
+            return;
+        }
+        let html = '';
+        logs.forEach(log => {
+            const statusClass = log.status === 'success' ? 'status-success' : 'status-failed';
+            const messageDisplay = formatMessage(log);
+            const errorDisplay = log.error_detail ? truncateText(log.error_detail, 40) : '-';
+            html += `
+                <tr>
+                    <td class="time">${formatTime(log.created_at)}</td>
+                    <td><code style="font-size:12px;">${log.event_id}</code></td>
+                    <td>${log.user_id}</td>
+                    <td><span class="channel-tag">${log.channel}</span></td>
+                    <td class="${statusClass}">${log.status}</td>
+                    <td class="message-preview" title="${log.message || ''}">${messageDisplay}</td>
+                    <td style="color:#dc3545; font-size:12px;">${errorDisplay}</td>
+                </tr>
+            `;
+        });
+        logsBody.innerHTML = html;
+    }
+
+    async function loadLogs(offset) {
+        const filters = getFilterValues();
+        let url = `/logs?limit=${limit}&offset=${offset}`;
+        url += buildFilterQuery(filters);
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const logs = data.data || [];
+            currentOffset = offset;
+            logCache = logs;
+            renderLogs(logs);
+            if (logs.length > 0) {
+                updateStatsFromLogs(logs);
+            }
+            const page = Math.floor(offset / limit) + 1;
+            pageInfo.textContent = `Trang ${page}`;
+            prevBtn.disabled = offset === 0;
+            nextBtn.disabled = logs.length < limit;
+        } catch (e) {
+            console.error('Load logs error:', e);
+            logsBody.innerHTML = '<tr><td colspan="7" style="color:red; text-align:center;">Lỗi tải dữ liệu. Vui lòng thử lại.</td></tr>';
+        }
+    }
+
+    // ---------- FILTER & RELOAD ----------
+    function applyFilters() { loadLogs(0); }
+    function resetFilters() {
+        document.getElementById('filterEvent').value = '';
+        document.getElementById('filterUser').value = '';
+        document.getElementById('filterChannel').value = '';
+        document.getElementById('filterStatus').value = '';
+        loadLogs(0);
+    }
+    function reloadLogs() {
+        loadLogs(0);
+        loadFullStats();
+    }
+    function changePage(delta) {
+        const newOffset = currentOffset + delta * limit;
+        if (newOffset < 0) return;
+        loadLogs(newOffset);
+    }
+
+    // ---------- SSE ----------
+    function handleSSENotification(data) {
+        console.log('📨 Raw SSE:', data);
+        if (data.event_id && data.status && data.channel) {
+            stats.total += 1;
+            if (data.status === 'success') stats.success += 1;
+            else stats.failed += 1;
+            // Kiểm tra trùng lặp theo (event_id, channel) trong cache hiện tại
+            const key = `${data.event_id}|${data.channel}`;
+            const existing = logCache.filter(l => `${l.event_id}|${l.channel}` === key);
+            if (existing.length > 0) {
+                stats.dedup += 1; // bản ghi mới là bản sao
+            }
+            stats.retry += (data.retry_count || 0);
+            renderStats();
+            addInbound(data);
+        } else {
+            const item = {
+                event_id: data.event_id || `signal-${Date.now()}`,
+                user_id: data.userId || '',
+                channel: 'inbound',
+                status: 'pending',
+                severity: data.message && data.message.includes('HIGH') ? 'HIGH' :
+                          data.message && data.message.includes('CRITICAL') ? 'CRITICAL' : 'LOW',
+                message: data.message || 'Inbound signal',
+                created_at: new Date().toISOString(),
+                ...data
+            };
+            addInbound(item);
+        }
+    }
+
+    function connectSSE() {
+        const evtSource = new EventSource('/notifications/stream');
+        evtSource.onopen = () => console.log('🔌 SSE connected');
+        evtSource.onerror = (e) => console.error('❌ SSE error', e);
+        evtSource.addEventListener('notification', (e) => {
+            try {
+                const data = JSON.parse(e.data);
+                handleSSENotification(data);
+            } catch (err) {
+                console.error('Parse SSE error', err);
+            }
+        });
+    }
+
+    // ---------- INIT ----------
+    window.onload = async function() {
+        await loadLogs(0);
+        await loadFullStats();
+        connectSSE();
+    };
+</script>
 </body>
 </html>

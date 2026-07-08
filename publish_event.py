@@ -8,8 +8,8 @@ TARGET = "security_team"
 SEVERITY = "HIGH"
 EVENT_TYPE = "alert.created"
 ALERT_ID = "alert-test-001"
-TITLE = "Quang Tùng MasterD"
-MESSAGE = "Quang Tùng MasterD"
+TITLE = "Quang Tùng"
+MESSAGE = "Quang Tùng"
 
 async def publish():
     connection = None

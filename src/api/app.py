@@ -4,8 +4,17 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from src.infrastructure.display.sse_notifier import manager, ConnectionManager
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Notification Service", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # cho phép tất cả origin, chỉ dùng cho dev
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Import routes
 from src.api.routes import health, info, metrics, logs
